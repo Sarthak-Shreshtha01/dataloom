@@ -622,6 +622,13 @@ class TestFillEmpty:
         with pytest.raises(TransformationError, match="Cannot compute median on non-numeric column"):
             fill_empty(df, column_index=0, strategy="median")
 
+    @pytest.mark.parametrize("strategy", ["mean", "median"])
+    def test_fill_mean_median_datetime_column_raises(self, strategy):
+        # Dates pass the to_numeric check as nanosecond counts; filling must not write a number into a date column.
+        df = pd.DataFrame({"when": pd.to_datetime(["2024-01-01", None, "2024-01-03"])})
+        with pytest.raises(TransformationError, match=f"Cannot compute {strategy} on non-numeric column"):
+            fill_empty(df, column_index=0, strategy=strategy)
+
     def test_fill_statistical_strategy_requires_specific_column(self):
         # Statistical strategies need one selected column so the computed value is unambiguous.
         df = pd.DataFrame({"a": [1, None, 3]})

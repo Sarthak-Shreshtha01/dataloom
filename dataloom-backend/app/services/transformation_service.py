@@ -426,6 +426,10 @@ def _coerce_fill_value_for_column(value, column: pd.Series):
     return value
 
 
+def _is_time_dtype(series: pd.Series) -> bool:
+    return pd.api.types.is_datetime64_any_dtype(series) or pd.api.types.is_timedelta64_dtype(series)
+
+
 def fill_empty(
     df: pd.DataFrame,
     fill_value=None,
@@ -465,7 +469,8 @@ def fill_empty(
 
         elif strategy == "mean":
             numeric_series = pd.to_numeric(series, errors="coerce")
-            if numeric_series.dropna().empty:
+            # to_numeric turns dates and durations into nanosecond counts, not NaN, so check their dtype
+            if numeric_series.dropna().empty or _is_time_dtype(series):
                 raise TransformationError(f"Cannot compute mean on non-numeric column '{column_name}'")
 
             non_numeric_mask = series.notna() & numeric_series.isna()
@@ -477,7 +482,8 @@ def fill_empty(
 
         elif strategy == "median":
             numeric_series = pd.to_numeric(series, errors="coerce")
-            if numeric_series.dropna().empty:
+            # to_numeric turns dates and durations into nanosecond counts, not NaN, so check their dtype
+            if numeric_series.dropna().empty or _is_time_dtype(series):
                 raise TransformationError(f"Cannot compute median on non-numeric column '{column_name}'")
 
             non_numeric_mask = series.notna() & numeric_series.isna()
